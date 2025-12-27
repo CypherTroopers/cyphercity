@@ -84,5 +84,5 @@ Fees are burned (not withdrawable):
 
 - Written in Solidity `0.8.19`
 - EVM version: **Istanbul**
-- Deployed address:0xc202a75e41ea2c093279c84a8bc51df97f826f0e
+- Deployed address:0x413E4D388A3a8d9fA86F52294b524941f8657e22
 
