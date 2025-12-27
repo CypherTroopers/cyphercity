@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>CypherCity</title>
+  <style>
+    body { font-family: system-ui, sans-serif; margin: 16px; }
+    .row { display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin: 10px 0; }
+    canvas { border:1px solid #ccc; image-rendering: pixelated; }
+    input, select, button { padding: 6px 10px; }
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; white-space: pre-wrap; }
+  </style>
+</head>
+<body>
+  <h1>CypherCity</h1>
+
+  <div class="row">
+    <button id="connect">Connect Wallet</button>
+    <span id="status" class="mono"></span>
+  </div>
+
+  <div class="row">
+    <label>View X</label><input id="x0" type="number" min="0" max="255" value="0">
+    <label>View Y</label><input id="y0" type="number" min="0" max="255" value="0">
+    <label>Size</label><input id="size" type="number" min="4" max="32" value="16">
+    <button id="load">Load</button>
+  </div>
+
+  <canvas id="map" width="512" height="512"></canvas>
+
+  <div class="row">
+    <div>
+      <div class="mono" id="selPos">Selected: -</div>
+      <div class="mono" id="selInfo">-</div>
+    </div>
+  </div>
+
+  <div class="row">
+    <label>Kind</label>
+    <select id="kind">
+      <option value="1">House</option>
+      <option value="2">Farm</option>
+      <option value="3">Workshop</option>
+      <option value="4">Park</option>
+      <option value="5">Road</option>
+      <option value="6">Monument</option>
+    </select>
+    <button id="place">Place</button>
+    <button id="upgrade">Upgrade</button>
+  </div>
+
+  <script type="module" src="./app.js"></script>
+</body>
+</html>
