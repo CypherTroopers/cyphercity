@@ -109,7 +109,7 @@
       {
         "name": "kind",
         "type": "uint8",
-        "internalType": "enum CypherCity.TileKind"
+        "internalType": "enum CypherCityV2Facet.TileKind"
       },
       {
         "name": "level",
@@ -120,6 +120,26 @@
         "name": "updatedAt",
         "type": "uint32",
         "internalType": "uint32"
+      },
+      {
+        "name": "isAnchor",
+        "type": "bool",
+        "internalType": "bool"
+      },
+      {
+        "name": "anchorX",
+        "type": "uint8",
+        "internalType": "uint8"
+      },
+      {
+        "name": "anchorY",
+        "type": "uint8",
+        "internalType": "uint8"
+      },
+      {
+        "name": "part",
+        "type": "uint8",
+        "internalType": "uint8"
       }
     ],
     "stateMutability": "view"
@@ -141,7 +161,7 @@
       {
         "name": "kind",
         "type": "uint8",
-        "internalType": "enum CypherCity.TileKind"
+        "internalType": "enum CypherCityV2Facet.TileKind"
       }
     ],
     "outputs": [],
@@ -170,13 +190,13 @@
     "name": "TilePlaced",
     "inputs": [
       {
-        "name": "x",
+        "name": "ax",
         "type": "uint16",
         "indexed": true,
         "internalType": "uint16"
       },
       {
-        "name": "y",
+        "name": "ay",
         "type": "uint16",
         "indexed": true,
         "internalType": "uint16"
@@ -185,7 +205,7 @@
         "name": "kind",
         "type": "uint8",
         "indexed": false,
-        "internalType": "enum CypherCity.TileKind"
+        "internalType": "enum CypherCityV2Facet.TileKind"
       },
       {
         "name": "founder",
@@ -201,13 +221,13 @@
     "name": "TileUpgraded",
     "inputs": [
       {
-        "name": "x",
+        "name": "ax",
         "type": "uint16",
         "indexed": true,
         "internalType": "uint16"
       },
       {
-        "name": "y",
+        "name": "ay",
         "type": "uint16",
         "indexed": true,
         "internalType": "uint16"
@@ -239,12 +259,22 @@
   },
   {
     "type": "error",
+    "name": "CorruptAnchor",
+    "inputs": []
+  },
+  {
+    "type": "error",
     "name": "InvalidKind",
     "inputs": []
   },
   {
     "type": "error",
-    "name": "MaxLevel",
+    "name": "MaxLevelReached",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "Needs2x2Space",
     "inputs": []
   },
   {
@@ -255,6 +285,11 @@
   {
     "type": "error",
     "name": "OutOfBounds",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "Overlap",
     "inputs": []
   }
 ]

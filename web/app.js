@@ -1,11 +1,13 @@
 // web/app.js
 import { ethers } from "https://cdn.jsdelivr.net/npm/ethers@6.13.5/+esm";
-import { drawSpriteTile, clearSpriteCache } from "./sprites.js";
+import { clearSpriteCache, drawGround, drawSprite1x1, drawBuilding2x2 } from "./sprites.js";
 
 const RPC_URL = "https://pubnodes.cypherium.io/rpc";
 const CHAIN_ID_HEX = "0x3f26"; // 16166
 const EXPLORER = "https://cypherium.tryethernal.com";
-const CITY = "0xC202a75e41eA2C093279c84A8BC51DF97f826f0E";
+
+// CypherCityV2 address (Diamond)
+const CITY = "0x413E4D388A3a8d9fA86F52294b524941f8657e22";
 
 const ui = {
   connect: document.getElementById("connect"),
@@ -37,23 +39,77 @@ let cityWrite;
 let view = { x0: 0, y0: 0, size: 16 };
 let selected = { x: 0, y: 0 };
 
-// chunk cache (size*size) packed uint256 -> BigInt
+// chunk cache packed uint256 -> BigInt
 let chunkPacked = [];
 
 const ctx = ui.map.getContext("2d");
 ctx.imageSmoothingEnabled = false;
 
-function decodePacked(u) {
-  // u: bigint packed
-  // 0 => empty
-  if (u === 0n) return { exists: false, founder: null, kind: 0, level: 0, updatedAt: 0 };
+// ------------------------------
+// Gas helpers (Cypherium RPC: no eth_feeHistory)
+// Use legacy gasPrice and manual gasLimit to avoid EIP-1559 estimation issues.
+// ------------------------------
+const DEFAULT_GAS_PRICE_GWEI = 1n; // adjust if needed
+const DEFAULT_GAS_LIMIT_PLACE = 300000n;
+const DEFAULT_GAS_LIMIT_UPGRADE = 300000n;
+
+async function getLegacyOverrides({ value, gasLimit }) {
+  // Prefer MetaMask/provider gasPrice if available; fallback to 1 gwei
+  let gasPrice;
+  try {
+    gasPrice = await browserProvider.send("eth_gasPrice", []);
+  } catch {
+    gasPrice = ethers.parseUnits(DEFAULT_GAS_PRICE_GWEI.toString(), "gwei");
+  }
+
+  const o = {
+    gasPrice, // legacy
+    gasLimit: gasLimit ? BigInt(gasLimit) : undefined,
+    value: value ?? undefined,
+  };
+
+  // remove undefined keys (ethers is ok, but keep clean)
+  Object.keys(o).forEach((k) => o[k] === undefined && delete o[k]);
+  return o;
+}
+
+// V2 packed decode
+function decodePackedV2(u) {
+  if (u === 0n) {
+    return {
+      exists: false,
+      founder: null,
+      kind: 0,
+      level: 0,
+      updatedAt: 0,
+      isAnchor: false,
+      anchorX: 0,
+      anchorY: 0,
+      part: 0,
+    };
+  }
 
   const founderMask = (1n << 160n) - 1n;
   const founder = "0x" + (u & founderMask).toString(16).padStart(40, "0");
+
   const kind = Number((u >> 160n) & 0xffn);
   const level = Number((u >> 168n) & 0xffn);
   const updatedAt = Number((u >> 176n) & 0xffffffffn);
-  return { exists: true, founder, kind, level, updatedAt };
+
+  const isAnchor = ((u >> 208n) & 1n) === 1n;
+  const anchorX = Number((u >> 209n) & 0xffn);
+  const anchorY = Number((u >> 217n) & 0xffn);
+  const part = Number((u >> 225n) & 0x3n);
+
+  return { exists: true, founder, kind, level, updatedAt, isAnchor, anchorX, anchorY, part };
+}
+
+function idxOf(x, y) {
+  const s = view.size;
+  const dx = x - view.x0;
+  const dy = y - view.y0;
+  if (dx < 0 || dy < 0 || dx >= s || dy >= s) return -1;
+  return dy * s + dx;
 }
 
 function draw() {
@@ -62,25 +118,47 @@ function draw() {
 
   ctx.clearRect(0, 0, ui.map.width, ui.map.height);
 
+  // 1) background pass (always stable, independent of selection)
   for (let i = 0; i < chunkPacked.length; i++) {
     const dx = i % s;
     const dy = Math.floor(i / s);
-    const info = decodePacked(chunkPacked[i]);
+    drawGround(ctx, dx * tilePx, dy * tilePx, tilePx);
+  }
 
-    drawSpriteTile(ctx, dx * tilePx, dy * tilePx, tilePx, info.kind, info.level);
+  // 2) road pass (1x1)
+  for (let i = 0; i < chunkPacked.length; i++) {
+    const dx = i % s;
+    const dy = Math.floor(i / s);
+    const info = decodePackedV2(chunkPacked[i]);
+    if (!info.exists) continue;
 
-    // Level badge (ensures upgrades are visible even if sprite diffs are subtle)
-    if (info.kind !== 0 && info.level > 0) {
-      ctx.save();
-      ctx.textBaseline = "top";
-      ctx.font = `${Math.max(10, Math.floor(tilePx / 3))}px ui-monospace, monospace`;
-      ctx.fillStyle = "rgba(0,0,0,0.75)";
-      ctx.fillText(String(info.level), dx * tilePx + 3, dy * tilePx + 3);
-      ctx.restore();
+    // Road = 5 (1 tile)
+    if (info.kind === 5) {
+      drawSprite1x1(ctx, dx * tilePx, dy * tilePx, tilePx, info.kind, info.level);
     }
   }
 
-  // selection border
+  // 3) building pass (2x2 drawn ONCE on anchor only)
+  for (let i = 0; i < chunkPacked.length; i++) {
+    const dx = i % s;
+    const dy = Math.floor(i / s);
+    const info = decodePackedV2(chunkPacked[i]);
+    if (!info.exists) continue;
+
+    // 0 empty, 5 road are not 2x2 buildings
+    if (info.kind === 0 || info.kind === 5) continue;
+
+    // Draw only if anchor.
+    if (!info.isAnchor) continue;
+
+    // If anchor is too close to right/bottom edge of current view,
+    // drawing would be clipped. Skip in that case to avoid half-buildings.
+    if (dx + 1 >= s || dy + 1 >= s) continue;
+
+    drawBuilding2x2(ctx, dx * tilePx, dy * tilePx, tilePx, info.kind, info.level);
+  }
+
+  // 4) selection border ONLY (no sprite/shape changes)
   const sx = selected.x - view.x0;
   const sy = selected.y - view.y0;
   if (sx >= 0 && sy >= 0 && sx < s && sy < s) {
@@ -169,35 +247,33 @@ async function loadChunk(opts = {}) {
   setStatus("Loaded.");
 }
 
-function idxOf(x, y) {
-  const s = view.size;
-  const dx = x - view.x0;
-  const dy = y - view.y0;
-  if (dx < 0 || dy < 0 || dx >= s || dy >= s) return -1;
-  return dy * s + dx;
-}
-
 async function updateSelectedFromCache() {
   const i = idxOf(selected.x, selected.y);
   ui.selPos.textContent = `Selected: (${selected.x},${selected.y})`;
 
   if (i >= 0) {
-    const info = decodePacked(chunkPacked[i]);
+    const info = decodePackedV2(chunkPacked[i]);
     ui.selInfo.textContent = info.exists
-      ? `kind=${info.kind}\nlevel=${info.level}\nfounder=${info.founder}\nupdatedAt=${info.updatedAt}`
+      ? `kind=${info.kind}\nlevel=${info.level}\nfounder=${info.founder}\nupdatedAt=${info.updatedAt}\nisAnchor=${info.isAnchor}\nanchor=(${info.anchorX},${info.anchorY})\npart=${info.part}`
       : "empty";
     return;
   }
 
   try {
     const r = await cityRead.getTile(selected.x, selected.y);
+    // V2: (exists, founder, kind, level, updatedAt, isAnchor, anchorX, anchorY, part)
     const exists = Boolean(r.exists ?? r[0]);
     const founder = (r.founder ?? r[1]) || "0x0";
     const kind = Number(r.kind ?? r[2]);
     const level = Number(r.level ?? r[3]);
     const updatedAt = Number(r.updatedAt ?? r[4]);
+    const isAnchor = Boolean(r.isAnchor ?? r[5]);
+    const anchorX = Number(r.anchorX ?? r[6]);
+    const anchorY = Number(r.anchorY ?? r[7]);
+    const part = Number(r.part ?? r[8]);
+
     ui.selInfo.textContent = exists
-      ? `kind=${kind}\nlevel=${level}\nfounder=${founder}\nupdatedAt=${updatedAt}`
+      ? `kind=${kind}\nlevel=${level}\nfounder=${founder}\nupdatedAt=${updatedAt}\nisAnchor=${isAnchor}\nanchor=(${anchorX},${anchorY})\npart=${part}`
       : "empty";
   } catch (e) {
     ui.selInfo.textContent = `read error: ${e.message}`;
@@ -230,12 +306,19 @@ async function placeSelected() {
   } catch {}
 
   setStatus("Sending place tx...");
-  const tx = await cityWrite.place(selected.x, selected.y, kind, { value: fee });
+
+  // Legacy gas overrides (no EIP-1559 / no feeHistory)
+  const overrides = await getLegacyOverrides({
+    value: fee,
+    gasLimit: DEFAULT_GAS_LIMIT_PLACE,
+  });
+
+  const tx = await cityWrite.place(selected.x, selected.y, kind, overrides);
   setStatus(`tx: ${tx.hash}`);
 
   try {
     await tx.wait();
-  } catch (e) {
+  } catch {
     setStatus("tx sent (wait warning). Refreshing...");
   }
 
@@ -251,12 +334,19 @@ async function upgradeSelected() {
   } catch {}
 
   setStatus("Sending upgrade tx...");
-  const tx = await cityWrite.upgrade(selected.x, selected.y, { value: fee });
+
+  // Legacy gas overrides (no EIP-1559 / no feeHistory)
+  const overrides = await getLegacyOverrides({
+    value: fee,
+    gasLimit: DEFAULT_GAS_LIMIT_UPGRADE,
+  });
+
+  const tx = await cityWrite.upgrade(selected.x, selected.y, overrides);
   setStatus(`tx: ${tx.hash}`);
 
   try {
     await tx.wait();
-  } catch (e) {
+  } catch {
     setStatus("tx sent (wait warning). Refreshing...");
   }
 
@@ -270,7 +360,6 @@ ui.upgrade.onclick = () => upgradeSelected().catch((e) => setStatus(e.message));
 
 (async () => {
   clearSpriteCache();
-
   await loadAbi();
   setStatus("Ready.");
   await loadChunk();

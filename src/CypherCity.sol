@@ -5,15 +5,23 @@ pragma solidity 0.8.19;
 /// @notice A 256x256 grid of tiles that everyone fills together. No administrator. All fees are sinks (non-withdrawable).
 contract CypherCity {
     uint16 public constant GRID = 256;
-    uint8  public constant MAX_LEVEL = 5;
+    uint8 public constant MAX_LEVEL = 5;
 
     // 0.001 CPH (= 0.001 ether unit): placement fee
-    uint256 public constant PLACE_FEE   = 1e15;
+    uint256 public constant PLACE_FEE = 1e15;
     // 0.0005 CPH: upgrade fee
     uint256 public constant UPGRADE_FEE = 5e14;
 
     // 0: Empty 1: House 2: Farm 3: Workshop 4: Park 5: Road 6: Monument
-    enum TileKind { Empty, House, Farm, Workshop, Park, Road, Monument }
+    enum TileKind {
+        Empty,
+        House,
+        Farm,
+        Workshop,
+        Park,
+        Road,
+        Monument
+    }
 
     // packed tile:
     // [0..159]   founder (address)
@@ -42,9 +50,7 @@ contract CypherCity {
     }
 
     function _pack(address founder, TileKind kind, uint8 level, uint32 updatedAt) internal pure returns (uint256) {
-        return uint256(uint160(founder))
-            | (uint256(uint8(kind)) << 160)
-            | (uint256(level) << 168)
+        return uint256(uint160(founder)) | (uint256(uint8(kind)) << 160) | (uint256(level) << 168)
             | (uint256(updatedAt) << 176);
     }
 
@@ -53,9 +59,9 @@ contract CypherCity {
         pure
         returns (address founder, TileKind kind, uint8 level, uint32 updatedAt)
     {
-        founder   = address(uint160(data));
-        kind      = TileKind(uint8(data >> 160));
-        level     = uint8(data >> 168);
+        founder = address(uint160(data));
+        kind = TileKind(uint8(data >> 160));
+        level = uint8(data >> 168);
         updatedAt = uint32(data >> 176);
     }
 
