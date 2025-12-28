@@ -29,7 +29,7 @@ There is **no owner**, **no admin**, and **no off-chain game server**.
 
 ## 🧱 City Model
 
-- Grid size: **256 × 256**
+- Grid size: 
 - Each tile contains:
   - `kind` (building type)
   - `level` (upgrade level)
@@ -47,12 +47,11 @@ There is **no owner**, **no admin**, and **no off-chain game server**.
 | 4  | Park       |
 | 5  | Road       |
 | 6  | Monument  |
-
----
+and-more
 
 ## ⬆️ Upgrade System
 
-- Tiles can be upgraded up to **Level 5**
+- Tiles can be upgraded up to **Level 10**
 - Upgrade effects:
   - On-chain: `level` increases
   - Frontend: sprite visually evolves
