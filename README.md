@@ -2,7 +2,7 @@
 
 **CypherCity** is an adminless, fully on-chain, collaborative city-building game deployed on the **Cypherium EVM** network.
 
-Players collaboratively build a single shared city on a 256×256 grid by placing and upgrading tiles on-chain.  
+Players collaboratively build a single shared city on a grid by placing and upgrading tiles on-chain.  
 There is **no owner**, **no admin**, and **no off-chain game server**.
 
 ---
