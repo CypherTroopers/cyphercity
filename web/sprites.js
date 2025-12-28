@@ -111,7 +111,6 @@ function outlineBox(grid, x0, y0, w, h, ch = "0") {
 
 function shadeBox(grid, x0, y0, w, h, fill, shadow) {
   rect(grid, x0, y0, w, h, fill);
-  // simple right/bottom shadow for depth
   for (let y = y0; y < y0 + h; y++) put(grid, x0 + w - 1, y, shadow);
   for (let x = x0; x < x0 + w; x++) put(grid, x, y0 + h - 1, shadow);
 }
@@ -138,8 +137,7 @@ function drawToCanvas(lines) {
 }
 
 function rampChar10(L) {
-  // L: 1..10
-  const map = ["1","2","3","4","5","6","7","8","9","A"];
+  const map = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "A"];
   return map[Math.max(1, Math.min(10, L)) - 1];
 }
 
@@ -194,7 +192,7 @@ function applyLevel16(kind, level, grid) {
   const L = clampLevel(level, 10);
   if (kind !== 5) return;
 
-  // Road: keep subtle improvements only (optional)
+  // Road: no required changes, keep gentle progression (optional)
   if (L >= 3) vline(grid, 8, 0, 15, "s");
   if (L >= 5) for (let y = 0; y < 16; y += 2) put(grid, 7, y, "S");
   if (L >= 7) {
@@ -221,11 +219,9 @@ function spriteCanvas16(kind, level) {
 
 /* ----------------------------
  * 32x32 (2x2 buildings)
- * - Now driven mostly by procedural drawing for grades 1..10
  * ---------------------------- */
 
 function baseGround32(kind) {
-  // cleaner grass base + faint texture
   const lines = Array.from({ length: 32 }, (_, y) => {
     let row = "";
     for (let x = 0; x < 32; x++) {
@@ -235,10 +231,12 @@ function baseGround32(kind) {
     return row;
   });
 
-  // give park kinds extra green base
   if (kind === 4 || kind === 10) {
     for (let y = 0; y < 32; y++) {
-      lines[y] = lines[y].split("").map((ch, x) => ((x + y) % 9 === 0 ? "g" : ch)).join("");
+      lines[y] = lines[y]
+        .split("")
+        .map((ch, x) => ((x + y) % 9 === 0 ? "g" : ch))
+        .join("");
     }
   }
   return lines;
@@ -251,15 +249,6 @@ function drawFence(grid, x0, y0, w, h) {
   }
 }
 
-function drawWindows(grid, x0, y0, w, h, spacingX = 3, spacingY = 3) {
-  for (let y = y0; y < y0 + h; y += spacingY) {
-    for (let x = x0; x < x0 + w; x += spacingX) {
-      put(grid, x, y, "B");
-      if ((x + y) % 2 === 0) put(grid, x, y, "L"); // occasional glass sparkle
-    }
-  }
-}
-
 function drawDoor(grid, x, y, w = 4, h = 5) {
   rect(grid, x, y, w, h, "T");
   outlineBox(grid, x, y, w, h, "0");
@@ -267,7 +256,6 @@ function drawDoor(grid, x, y, w = 4, h = 5) {
 }
 
 function drawTree(grid, cx, cy, size = 1) {
-  // canopy
   const r = 2 + size;
   for (let y = -r; y <= r; y++) {
     for (let x = -r; x <= r; x++) {
@@ -277,70 +265,58 @@ function drawTree(grid, cx, cy, size = 1) {
       }
     }
   }
-  // trunk
   rect(grid, cx - 1, cy + r - 1, 2, 4, "t");
   rect(grid, cx - 1, cy + r - 1, 1, 4, "T");
 }
 
 function drawCow(grid, x0, y0, w, h, spotDensity = 0.25) {
-  // body (white)
-  rect(grid, x0, y0, w, h, "7"); // white ramp char
+  rect(grid, x0, y0, w, h, "7");
   outlineBox(grid, x0, y0, w, h, "0");
 
-  // head nub
   rect(grid, x0 + w - 3, y0 + 2, 3, 3, "7");
   outlineBox(grid, x0 + w - 3, y0 + 2, 3, 3, "0");
 
-  // legs
   const legY = y0 + h;
   for (let lx = x0 + 1; lx < x0 + w - 1; lx += Math.max(2, Math.floor(w / 3))) {
-    put(grid, lx, legY, "2");     // brown-ish
-    put(grid, lx, legY + 1, "1"); // dark
+    put(grid, lx, legY, "2");
+    put(grid, lx, legY + 1, "1");
   }
 
-  // spots
   for (let y = y0 + 1; y < y0 + h - 1; y++) {
     for (let x = x0 + 1; x < x0 + w - 1; x++) {
       const v = (x * 17 + y * 29) % 100;
-      if (v < spotDensity * 100) put(grid, x, y, "1"); // black
+      if (v < spotDensity * 100) put(grid, x, y, "1");
     }
   }
 
-  // eyes
   put(grid, x0 + w - 2, y0 + 3, "1");
 }
 
 function drawPool(grid, x0, y0, w, h) {
   rect(grid, x0, y0, w, h, "P");
-  // depth
   rect(grid, x0 + 1, y0 + 1, w - 2, h - 2, "p");
-  // highlight
   for (let x = x0 + 2; x < x0 + w - 2; x += 3) put(grid, x, y0 + 1, "L");
   outlineBox(grid, x0, y0, w, h, "0");
 }
 
 function drawSwimmer(grid, cx, cy) {
-  // tiny swimmer: head + arms
-  put(grid, cx, cy, "7");        // head
+  put(grid, cx, cy, "7");
   put(grid, cx - 1, cy + 1, "7");
   put(grid, cx + 1, cy + 1, "7");
-  put(grid, cx, cy + 1, "M");    // floaty
+  put(grid, cx, cy + 1, "M");
 }
 
 function drawFerrisWheel(grid, cx, cy, r) {
-  // rim
   for (let a = 0; a < 360; a += 15) {
     const rad = (a * Math.PI) / 180;
     const x = Math.round(cx + Math.cos(rad) * r);
     const y = Math.round(cy + Math.sin(rad) * r);
     put(grid, x, y, "M");
   }
-  // spokes
   for (let a = 0; a < 360; a += 45) {
     const rad = (a * Math.PI) / 180;
     const x = Math.round(cx + Math.cos(rad) * r);
     const y = Math.round(cy + Math.sin(rad) * r);
-    // simple line to center
     const steps = r;
     for (let i = 0; i <= steps; i++) {
       const px = Math.round(cx + (x - cx) * (i / steps));
@@ -348,91 +324,244 @@ function drawFerrisWheel(grid, cx, cy, r) {
       put(grid, px, py, "m");
     }
   }
-  // hub
   rect(grid, cx - 1, cy - 1, 3, 3, "X");
   outlineBox(grid, cx - 1, cy - 1, 3, 3, "0");
 
-  // base supports
   vline(grid, cx - 3, cy + r - 1, cy + r + 6, "0");
   vline(grid, cx + 3, cy + r - 1, cy + r + 6, "0");
   hline(grid, cx - 6, cx + 6, cy + r + 6, "K");
 }
 
 function baseSprite32(kind) {
-  // start with ground; drawings are applied in applyLevel32
   return baseGround32(kind);
 }
 
 function applyLevel32(kind, level, grid) {
   const L = clampLevel(level, 10);
 
-  // common: base pad/sidewalk for buildings (not parks)
   function addPad(x0, y0, w, h) {
     rect(grid, x0, y0, w, h, "D");
     rect(grid, x0 + 1, y0 + 1, w - 2, h - 2, "d");
     outlineBox(grid, x0, y0, w, h, "0");
   }
 
-  // HOUSE: grades 1..10 get more luxurious
-  function drawHouse() {
-    addPad(6, 22, 20, 8);
+  /* ----------------------------
+   * House: Photo series Lv1..Lv10 (10 distinct looks)
+   * ---------------------------- */
+  function drawHousePhotoSeries() {
+    // shared landscaping baseline
+    addPad(3, 25, 26, 5);
+    hline(grid, 3, 28, 24, "K"); // subtle curb/drive edge
 
-    const bodyX = 8, bodyY = 12, bodyW = 16, bodyH = 12;
-    const wall = L >= 6 ? "W" : "w";
-    shadeBox(grid, bodyX, bodyY, bodyW, bodyH, wall, "w");
-    outlineBox(grid, bodyX, bodyY, bodyW, bodyH);
-
-    // roof upgrades
-    const roofH = 7 + Math.floor(L / 3);
-    const roofY = bodyY - roofH;
-    for (let i = 0; i < roofH; i++) {
-      const inset = Math.max(0, Math.floor(i * 1.1));
-      hline(grid, bodyX + inset, bodyX + bodyW - 1 - inset, roofY + i, L >= 7 ? "R" : "r");
-    }
-    outlineBox(grid, bodyX + 1, roofY + 1, bodyW - 2, roofH - 1, "0");
-
-    // windows count/shine
-    const win = L >= 5 ? "L" : "B";
-    const rows = L >= 8 ? 2 : 1;
-    for (let ry = 0; ry < rows; ry++) {
-      const y = bodyY + 3 + ry * 4;
-      rect(grid, bodyX + 2, y, 3, 3, win);
-      rect(grid, bodyX + 11, y, 3, 3, win);
-      outlineBox(grid, bodyX + 2, y, 3, 3);
-      outlineBox(grid, bodyX + 11, y, 3, 3);
+    // helpers
+    function gableRoof(x0, y0, w, h, roofCh = "R") {
+      for (let i = 0; i < h; i++) {
+        const inset = Math.floor((i * w) / (2 * h));
+        hline(grid, x0 + inset, x0 + w - 1 - inset, y0 + i, roofCh);
+      }
+      outlineBox(grid, x0 + 1, y0 + 1, w - 2, Math.max(2, h - 1), "0");
     }
 
-    // door + porch
-    drawDoor(grid, bodyX + 6, bodyY + 7, 4, 5);
-    if (L >= 4) {
-      rect(grid, bodyX + 4, bodyY + 11, 8, 1, "T"); // porch
-      outlineBox(grid, bodyX + 4, bodyY + 11, 8, 2, "0");
+    function flatRoof(x0, y0, w, h, topCh = "K") {
+      rect(grid, x0, y0, w, h, topCh);
+      outlineBox(grid, x0, y0, w, h, "0");
     }
 
-    // chimney / garden / driveway
-    if (L >= 3) {
-      rect(grid, bodyX + 12, roofY + 2, 2, 5, "s");
-      outlineBox(grid, bodyX + 12, roofY + 2, 2, 5, "0");
+    function bodyBox(x0, y0, w, h, fill = "W") {
+      shadeBox(grid, x0, y0, w, h, fill, fill === "C" ? "c" : "w");
+      outlineBox(grid, x0, y0, w, h, "0");
     }
-    if (L >= 6) drawTree(grid, 6, 12, 1);
-    if (L >= 9) {
-      rect(grid, 24, 24, 6, 3, "C"); // driveway
-      outlineBox(grid, 24, 24, 6, 3, "0");
-      rect(grid, 2, 25, 3, 2, "M"); // flower bed
+
+    function window2x2(x, y, glass = "B") {
+      rect(grid, x, y, 2, 2, glass);
+      outlineBox(grid, x, y, 2, 2, "0");
+    }
+
+    function bigWindow(x0, y0, w, h) {
+      rect(grid, x0, y0, w, h, "L");
+      // depth stripes
+      for (let x = x0; x < x0 + w; x += 2) vline(grid, x, y0, y0 + h - 1, "l");
+      outlineBox(grid, x0, y0, w, h, "0");
+    }
+
+    function garage(x0, y0, w, h) {
+      rect(grid, x0, y0, w, h, "c");
+      outlineBox(grid, x0, y0, w, h, "0");
+      for (let x = x0 + 1; x < x0 + w - 1; x += 2) put(grid, x, y0 + 2, "C");
+      hline(grid, x0 + 1, x0 + w - 2, y0 + 1, "0");
+    }
+
+    function porch(x0, y0, w, h) {
+      rect(grid, x0, y0, w, h, "T");
+      outlineBox(grid, x0, y0, w, h, "0");
+      for (let x = x0 + 1; x < x0 + w - 1; x += 3) vline(grid, x, y0, y0 + h - 1, "t");
+    }
+
+    function turret(cx, yTop, h, bodyCh = "S", roofCh = "R") {
+      // round-ish tower
+      for (let y = 0; y < h; y++) {
+        const r = Math.max(1, Math.floor(3 - (y / h) * 1));
+        hline(grid, cx - r, cx + r, yTop + y, bodyCh);
+      }
+      outlineBox(grid, cx - 3, yTop + 2, 7, h - 2, "0");
+      // cone roof
+      for (let i = 0; i < 5; i++) hline(grid, cx - i, cx + i, yTop - 1 + i, roofCh);
+      put(grid, cx, yTop - 2, "0");
+    }
+
+    // LEVEL DESIGNS (match the photo vibe)
+    switch (L) {
+      case 1: {
+        // Wood cabin + porch
+        gableRoof(6, 6, 20, 7, "t");
+        bodyBox(7, 13, 18, 10, "T");
+        porch(10, 21, 12, 3);
+        window2x2(10, 15, "B");
+        window2x2(19, 15, "B");
+        drawDoor(grid, 15, 16, 4, 7);
+        drawTree(grid, 27, 12, 1);
+        break;
+      }
+      case 2: {
+        // Simple suburban 2-story + garage
+        gableRoof(7, 5, 18, 6, "r");
+        bodyBox(8, 11, 16, 12, "W");
+        garage(4, 16, 10, 7);
+        flatRoof(4, 15, 10, 1, "K");
+        window2x2(10, 13, "B");
+        window2x2(18, 13, "B");
+        window2x2(12, 17, "B");
+        drawDoor(grid, 15, 16, 3, 7);
+        break;
+      }
+      case 3: {
+        // Blue craftsman vibe (dark body + wide windows)
+        gableRoof(6, 5, 20, 6, "K");
+        bodyBox(7, 11, 18, 12, "C");
+        rect(grid, 7, 11, 18, 12, "c"); // slightly darker face
+        outlineBox(grid, 7, 11, 18, 12, "0");
+        bigWindow(9, 13, 14, 4);
+        garage(6, 18, 10, 6);
+        porch(17, 18, 8, 4);
+        drawDoor(grid, 19, 19, 3, 5);
+        break;
+      }
+      case 4: {
+        // Larger suburban with porch + extra wing
+        gableRoof(6, 5, 20, 6, "r");
+        bodyBox(7, 11, 18, 12, "W");
+        bodyBox(4, 14, 8, 8, "w"); // left wing
+        porch(14, 20, 12, 4);
+        window2x2(9, 13, "B");
+        window2x2(19, 13, "B");
+        window2x2(6, 16, "B");
+        drawDoor(grid, 18, 20, 3, 6);
+        break;
+      }
+      case 5: {
+        // Gray suburban (clean, balanced)
+        gableRoof(6, 5, 20, 6, "K");
+        bodyBox(7, 11, 18, 12, "C");
+        garage(4, 16, 10, 7);
+        window2x2(10, 13, "L");
+        window2x2(18, 13, "L");
+        window2x2(16, 18, "B");
+        drawDoor(grid, 15, 16, 3, 7);
+        rect(grid, 7, 23, 18, 1, "K"); // fascia line
+        break;
+      }
+      case 6: {
+        // Stone facade (heavier)
+        gableRoof(6, 5, 20, 6, "r");
+        bodyBox(7, 11, 18, 12, "S");
+        rect(grid, 7, 17, 18, 6, "s"); // darker base stone
+        outlineBox(grid, 7, 11, 18, 12, "0");
+        garage(4, 16, 10, 7);
+        window2x2(10, 13, "B");
+        window2x2(19, 13, "B");
+        drawDoor(grid, 16, 16, 3, 7);
+        put(grid, 17, 15, "X"); // small accent
+        break;
+      }
+      case 7: {
+        // Mansion with turret (classic)
+        gableRoof(5, 6, 18, 6, "r");
+        bodyBox(6, 12, 17, 12, "W");
+        turret(24, 10, 14, "S", "R");
+        garage(3, 17, 10, 7);
+        bigWindow(9, 14, 8, 4);
+        drawDoor(grid, 15, 18, 3, 6);
+        rect(grid, 13, 12, 3, 2, "X"); // crest
+        break;
+      }
+      case 8: {
+        // Bigger turret + columned porch
+        gableRoof(4, 6, 20, 6, "R");
+        bodyBox(5, 12, 19, 12, "W");
+        turret(25, 9, 15, "W", "R");
+        porch(12, 20, 12, 4);
+        // columns
+        for (let x = 13; x <= 22; x += 3) vline(grid, x, 20, 23, "w");
+        bigWindow(8, 14, 10, 4);
+        garage(3, 17, 10, 7);
+        drawDoor(grid, 17, 20, 3, 6);
+        break;
+      }
+      case 9: {
+        // Wide modern luxury (low, lots of glass)
+        flatRoof(4, 7, 24, 2, "K");
+        bodyBox(4, 9, 24, 14, "C");
+        bigWindow(6, 11, 20, 6);
+        rect(grid, 4, 18, 24, 2, "K"); // shadow band
+        // warm interior strip
+        for (let x = 7; x <= 25; x += 2) put(grid, x, 16, "X");
+        drawDoor(grid, 14, 17, 4, 6);
+        drawTree(grid, 3, 14, 1);
+        break;
+      }
+      case 10: {
+        // Ultra modern mansion (flat roof + stacked boxes + terrace)
+        flatRoof(3, 6, 26, 2, "K");
+        // main box
+        bodyBox(4, 8, 24, 12, "C");
+        bigWindow(6, 10, 10, 6);
+        bigWindow(18, 10, 8, 6);
+        // second floor offset block
+        bodyBox(12, 4, 16, 6, "C");
+        bigWindow(14, 5, 12, 4);
+        // terrace / steps
+        rect(grid, 4, 20, 24, 3, "K");
+        outlineBox(grid, 4, 20, 24, 3, "0");
+        rect(grid, 10, 23, 12, 2, "D");
+        rect(grid, 11, 24, 10, 1, "d");
+        // accent lights
+        for (let x = 6; x <= 26; x += 3) put(grid, x, 19, "X");
+        drawTree(grid, 2, 12, 2);
+        break;
+      }
+      default: {
+        // fallback (shouldn't happen)
+        gableRoof(7, 6, 18, 6, "r");
+        bodyBox(8, 12, 16, 12, "W");
+        window2x2(11, 14, "B");
+        window2x2(19, 14, "B");
+        drawDoor(grid, 15, 16, 3, 7);
+        break;
+      }
     }
   }
 
-  // FARM: grade 1..10 cows grow bigger
+  /* ----------------------------
+   * Farm: cow grows each grade
+   * ---------------------------- */
   function drawFarm() {
-    // pasture
     drawFence(grid, 3, 7, 26, 16);
-    // field stripes
+
     for (let y = 9; y < 20; y++) {
       for (let x = 5; x < 27; x++) put(grid, x, y, (x + y) % 4 === 0 ? "g" : "G");
       if (y % 3 === 0) hline(grid, 5, 27, y, "Y");
     }
 
-    // barn (small)
     addPad(18, 22, 12, 8);
     rect(grid, 20, 16, 9, 7, "r");
     outlineBox(grid, 20, 16, 9, 7, "0");
@@ -441,17 +570,13 @@ function applyLevel32(kind, level, grid) {
     rect(grid, 23, 20, 3, 3, "T");
     outlineBox(grid, 23, 20, 3, 3, "0");
 
-    // cow scaling
-    const cowScale = L; // 1..10
-    // map to size within fence
-    const w = Math.min(14, 4 + Math.floor(cowScale * 1.0));
-    const h = Math.min(9, 3 + Math.floor(cowScale * 0.6));
+    const w = Math.min(14, 4 + Math.floor(L * 1.0));
+    const h = Math.min(9, 3 + Math.floor(L * 0.6));
     const x0 = 6 + Math.floor((12 - w) / 2);
     const y0 = 12 + Math.floor((7 - h) / 2);
-    const density = 0.18 + (cowScale / 10) * 0.22;
+    const density = 0.18 + (L / 10) * 0.22;
     drawCow(grid, x0, y0, w, h, density);
 
-    // hay bales at higher grades
     if (L >= 4) {
       rect(grid, 6, 23, 5, 3, "Y");
       outlineBox(grid, 6, 23, 5, 3, "0");
@@ -462,33 +587,29 @@ function applyLevel32(kind, level, grid) {
     }
   }
 
-  // WORKSHOP: company building 1..10 floors
+  /* ----------------------------
+   * Workshop: 1..10 floors
+   * ---------------------------- */
   function drawWorkshop() {
     addPad(5, 24, 22, 6);
 
-    // building footprint
     const x0 = 7, w = 18;
-    const maxFloors = 10;
-    const floors = Math.max(1, Math.min(maxFloors, L));
-    const floorH = 2;              // each floor = 2px
-    const baseY = 28;              // ground contact
-    const height = floors * floorH + 6; // include lobby/roof
+    const floors = Math.max(1, Math.min(10, L));
+    const floorH = 2;
+    const baseY = 28;
+    const height = floors * floorH + 6;
     const y0 = Math.max(2, baseY - height);
 
-    // body
     rect(grid, x0, y0, w, height, "C");
     outlineBox(grid, x0, y0, w, height, "0");
-    // shadow edge
     vline(grid, x0 + w - 1, y0, y0 + height - 1, "c");
     hline(grid, x0, x0 + w - 1, y0 + height - 1, "c");
 
-    // floor separators
     for (let f = 1; f <= floors; f++) {
       const yy = baseY - (f * floorH);
       hline(grid, x0 + 1, x0 + w - 2, yy, "c");
     }
 
-    // windows per floor
     for (let f = 0; f < floors; f++) {
       const yy = baseY - (f * floorH) - 1;
       for (let x = x0 + 2; x <= x0 + w - 3; x += 3) {
@@ -496,61 +617,55 @@ function applyLevel32(kind, level, grid) {
       }
     }
 
-    // lobby door + sign
     drawDoor(grid, x0 + 7, baseY - 4, 4, 5);
     rect(grid, x0 + 2, y0 + 2, w - 4, 2, "X");
     outlineBox(grid, x0 + 2, y0 + 2, w - 4, 2, "0");
 
-    // rooftop details
     if (L >= 5) {
       rect(grid, x0 + 2, y0 - 1, w - 4, 1, "K");
       outlineBox(grid, x0 + 2, y0 - 1, w - 4, 2, "0");
     }
     if (L >= 8) {
-      rect(grid, x0 + w - 5, y0 + 1, 3, 5, "s"); // HVAC
+      rect(grid, x0 + w - 5, y0 + 1, 3, 5, "s");
       outlineBox(grid, x0 + w - 5, y0 + 1, 3, 5, "0");
     }
   }
 
-  // PARK: just make it pretty; no level effect
+  /* ----------------------------
+   * Park: prettier, no level change required
+   * ---------------------------- */
   function drawPark() {
-    // curved path + pond + benches
-    // path
     for (let y = 8; y < 30; y++) {
       const x = 6 + Math.floor((y - 8) * 0.25);
       rect(grid, x, y, 10, 2, "D");
       rect(grid, x + 1, y + 1, 8, 1, "d");
     }
-    // pond
     drawPool(grid, 18, 10, 10, 7);
-    // trees
     drawTree(grid, 8, 10, 1);
     drawTree(grid, 10, 18, 2);
     drawTree(grid, 26, 22, 1);
-    // bench
+
     rect(grid, 9, 25, 6, 2, "T");
     hline(grid, 9, 14, 26, "t");
     outlineBox(grid, 9, 25, 6, 2, "0");
   }
 
-  // MONUMENT: color shifts with level (1..10)
+  /* ----------------------------
+   * Monument: color ramp by level
+   * ---------------------------- */
   function drawMonument() {
     addPad(10, 24, 12, 6);
     const ch = rampChar10(L);
 
-    // plinth
     rect(grid, 10, 21, 12, 4, ch);
     outlineBox(grid, 10, 21, 12, 4, "0");
 
-    // column
     rect(grid, 14, 8, 4, 13, ch);
     outlineBox(grid, 14, 8, 4, 13, "0");
 
-    // top
     rect(grid, 12, 6, 8, 3, ch);
     outlineBox(grid, 12, 6, 8, 3, "0");
 
-    // gem / flame accent grows
     if (L >= 4) rect(grid, 15, 3, 2, 3, "X");
     if (L >= 7) {
       put(grid, 14, 2, "X");
@@ -559,18 +674,19 @@ function applyLevel32(kind, level, grid) {
       put(grid, 16, 1, "x");
     }
     if (L >= 9) {
-      // laurels
       rect(grid, 11, 19, 3, 2, "G");
       rect(grid, 18, 19, 3, 2, "G");
     }
   }
 
-  // HighRiseCommercial: L1..7 = 4..10 floors. L8..10 = 2..4 towers.
+  /* ----------------------------
+   * HighRiseCommercial: floors & tower count logic (kept)
+   * ---------------------------- */
   function drawHighRiseCommercial() {
     addPad(4, 26, 24, 4);
 
     const towers = L <= 7 ? 1 : (L === 8 ? 2 : (L === 9 ? 3 : 4));
-    const floors = L <= 7 ? (3 + L) : 10; // 4..10, else 10
+    const floors = L <= 7 ? (3 + L) : 10;
     const floorH = 2;
     const height = floors * floorH + 4;
     const baseY = 28;
@@ -582,13 +698,12 @@ function applyLevel32(kind, level, grid) {
 
     for (let i = 0; i < towers; i++) {
       const x0 = 4 + i * (towerW + gap);
-      // body
+
       rect(grid, x0, y0, towerW, height, "C");
       outlineBox(grid, x0, y0, towerW, height, "0");
       vline(grid, x0 + towerW - 1, y0, y0 + height - 1, "c");
       hline(grid, x0, x0 + towerW - 1, y0 + height - 1, "c");
 
-      // glass windows
       for (let f = 0; f < floors; f++) {
         const yy = baseY - (f * floorH) - 1;
         for (let x = x0 + 1; x <= x0 + towerW - 2; x += 2) {
@@ -596,7 +711,6 @@ function applyLevel32(kind, level, grid) {
         }
       }
 
-      // neon sign on front at higher levels
       if (L >= 3) {
         const sx = x0 + 1;
         const sw = Math.max(3, towerW - 2);
@@ -604,19 +718,20 @@ function applyLevel32(kind, level, grid) {
         if (L >= 6) rect(grid, sx, y0 + 2, sw, 1, "x");
       }
 
-      // lobby
       rect(grid, x0 + 1, baseY - 3, towerW - 2, 3, "c");
       outlineBox(grid, x0 + 1, baseY - 3, towerW - 2, 3, "0");
     }
   }
 
-  // Residential: color shifts with level (1..10)
+  /* ----------------------------
+   * Residential: color ramp by level (kept)
+   * ---------------------------- */
   function drawResidential() {
     addPad(6, 26, 20, 4);
     const ch = rampChar10(L);
 
     const x0 = 8, w = 16;
-    const floors = 6 + Math.floor(L / 2); // 6..11ish
+    const floors = 6 + Math.floor(L / 2);
     const floorH = 2;
     const height = Math.min(26, floors * floorH + 4);
     const baseY = 28;
@@ -625,23 +740,19 @@ function applyLevel32(kind, level, grid) {
     rect(grid, x0, y0, w, height, ch);
     outlineBox(grid, x0, y0, w, height, "0");
 
-    // balconies / rails
     for (let y = y0 + 4; y < baseY - 2; y += 4) {
       hline(grid, x0 + 1, x0 + w - 2, y, "w");
       for (let x = x0 + 2; x < x0 + w - 2; x += 3) put(grid, x, y + 1, "T");
     }
 
-    // windows
     for (let y = y0 + 3; y < baseY - 1; y += 3) {
       for (let x = x0 + 2; x < x0 + w - 2; x += 3) {
         put(grid, x, y, (L >= 6 && (x + y) % 2 === 0) ? "L" : "B");
       }
     }
 
-    // entrance
     drawDoor(grid, x0 + 6, baseY - 5, 4, 5);
 
-    // crown / roof detail with higher grades
     if (L >= 8) {
       rect(grid, x0 + 2, y0 - 1, w - 4, 2, "9");
       outlineBox(grid, x0 + 2, y0 - 1, w - 4, 2, "0");
@@ -651,16 +762,16 @@ function applyLevel32(kind, level, grid) {
     }
   }
 
-  // LuxuryHouseWithPool: pool grows + swimmers + big tree etc.
+  /* ----------------------------
+   * LuxuryHouseWithPool (kept)
+   * ---------------------------- */
   function drawLuxuryHouseWithPool() {
     addPad(4, 24, 24, 6);
 
-    // house body (slightly bigger than normal house)
     const bodyX = 6, bodyY = 10, bodyW = 14, bodyH = 14;
     shadeBox(grid, bodyX, bodyY, bodyW, bodyH, "W", "w");
     outlineBox(grid, bodyX, bodyY, bodyW, bodyH, "0");
 
-    // roof
     const roofH = 8;
     const roofY = bodyY - roofH;
     for (let i = 0; i < roofH; i++) {
@@ -669,69 +780,60 @@ function applyLevel32(kind, level, grid) {
     }
     outlineBox(grid, bodyX + 1, roofY + 1, bodyW - 2, roofH - 1, "0");
 
-    // luxury windows
     rect(grid, bodyX + 2, bodyY + 3, 4, 4, "L");
     rect(grid, bodyX + 8, bodyY + 3, 4, 4, "L");
     outlineBox(grid, bodyX + 2, bodyY + 3, 4, 4, "0");
     outlineBox(grid, bodyX + 8, bodyY + 3, 4, 4, "0");
     drawDoor(grid, bodyX + 5, bodyY + 8, 4, 6);
 
-    // pool grows with level: width/height increase
     const pw = Math.min(14, 6 + Math.floor(L * 0.8));
     const ph = Math.min(10, 4 + Math.floor(L * 0.6));
     const px0 = 20;
     const py0 = 12 + Math.max(0, Math.floor((10 - ph) / 2));
     drawPool(grid, px0 - pw, py0, pw, ph);
 
-    // deck
     if (L >= 2) {
       rect(grid, px0 - pw, py0 + ph, pw, 2, "T");
       hline(grid, px0 - pw, px0 - 1, py0 + ph + 1, "t");
       outlineBox(grid, px0 - pw, py0 + ph, pw, 2, "0");
     }
 
-    // swimmers appear at higher grades
     if (L >= 5) drawSwimmer(grid, px0 - Math.floor(pw / 2), py0 + Math.floor(ph / 2));
     if (L >= 7) drawSwimmer(grid, px0 - Math.floor(pw / 3), py0 + Math.floor(ph / 2) - 1);
     if (L >= 9) drawSwimmer(grid, px0 - Math.floor(pw / 2) - 2, py0 + Math.floor(ph / 2) + 1);
 
-    // big tree / landscaping
     if (L >= 4) drawTree(grid, 4, 12, 2);
     if (L >= 8) drawTree(grid, 4, 20, 1);
 
-    // lights
     if (L >= 6) {
       for (let x = px0 - pw + 1; x < px0 - 1; x += 3) put(grid, x, py0 - 1, "X");
     }
   }
 
-  // LargePark: designer park with features; mild upgrades
+  /* ----------------------------
+   * LargePark (kept)
+   * ---------------------------- */
   function drawLargePark() {
-    // winding path
     for (let y = 6; y < 30; y++) {
       const x = 10 + Math.floor(Math.sin((y - 6) * 0.35) * 4);
       rect(grid, x, y, 12, 2, "D");
       rect(grid, x + 1, y + 1, 10, 1, "d");
     }
 
-    // big pond + islands
     drawPool(grid, 4, 10, 12, 9);
     rect(grid, 7, 13, 3, 2, "G");
     rect(grid, 10, 16, 2, 2, "g");
 
-    // gazebo / statue zone
     rect(grid, 20, 10, 10, 6, "D");
     outlineBox(grid, 20, 10, 10, 6, "0");
     rect(grid, 23, 11, 4, 4, "T");
     outlineBox(grid, 23, 11, 4, 4, "0");
     put(grid, 25, 9, "X");
 
-    // trees
     drawTree(grid, 26, 22, 2);
     drawTree(grid, 18, 24, 1);
     drawTree(grid, 6, 24, 1);
 
-    // flowers
     for (let i = 0; i < 10; i++) {
       const x = 18 + ((i * 5) % 12);
       const y = 18 + ((i * 7) % 10);
@@ -739,91 +841,73 @@ function applyLevel32(kind, level, grid) {
     }
   }
 
-  // AmusementPark:
-  // - ferris wheel always
-  // - each grade adds rides / stalls
-  // - grade 10: cannot draw Mickey Mouse; instead draw an original mascot face (smiley)
+  /* ----------------------------
+   * AmusementPark (kept)
+   * ---------------------------- */
   function drawAmusementPark() {
     addPad(4, 26, 24, 4);
 
-    // entry gate
     rect(grid, 6, 20, 20, 6, "M");
     rect(grid, 6, 22, 20, 4, "m");
     outlineBox(grid, 6, 20, 20, 6, "0");
     rect(grid, 12, 21, 8, 2, "X");
     outlineBox(grid, 12, 21, 8, 2, "0");
 
-    // ferris wheel
     drawFerrisWheel(grid, 24, 10, 7);
 
-    // rides add by level
     if (L >= 2) {
-      // carousel
       rect(grid, 6, 10, 10, 6, "C");
       outlineBox(grid, 6, 10, 10, 6, "0");
       rect(grid, 7, 11, 8, 1, "X");
       for (let x = 7; x <= 14; x += 2) put(grid, x, 14, "M");
     }
     if (L >= 3) {
-      // coaster track
       for (let x = 6; x < 18; x++) put(grid, x, 6 + Math.floor(Math.sin(x * 0.5) * 2), "0");
       for (let x = 6; x < 18; x++) put(grid, x, 7 + Math.floor(Math.sin(x * 0.5) * 2), "K");
     }
     if (L >= 4) {
-      // snack stall
       rect(grid, 6, 16, 8, 4, "T");
       outlineBox(grid, 6, 16, 8, 4, "0");
       rect(grid, 6, 15, 8, 1, "X");
     }
     if (L >= 5) {
-      // lights
       for (let x = 6; x <= 25; x += 2) put(grid, x, 25, "X");
     }
     if (L >= 6) {
-      // bumper cars zone
       rect(grid, 16, 14, 8, 5, "C");
       outlineBox(grid, 16, 14, 8, 5, "0");
       put(grid, 18, 16, "M");
       put(grid, 21, 17, "X");
     }
     if (L >= 7) {
-      // extra ride
       rect(grid, 8, 7, 6, 3, "m");
       outlineBox(grid, 8, 7, 6, 3, "0");
       for (let x = 9; x <= 12; x++) put(grid, x, 6, "M");
     }
     if (L >= 8) {
-      // fireworks sparkles
       put(grid, 10, 3, "X");
       put(grid, 12, 2, "M");
       put(grid, 8, 2, "X");
     }
     if (L >= 9) {
-      // second small wheel / spinning ride
       drawFerrisWheel(grid, 10, 12, 4);
     }
-
     if (L >= 10) {
-      // NOTE: Mickey Mouse is copyrighted; draw an original mascot face instead.
-      // mascot face (smiley) on the gate sign
       rect(grid, 12, 20, 8, 6, "7");
       outlineBox(grid, 12, 20, 8, 6, "0");
-      // eyes
       put(grid, 14, 22, "1");
       put(grid, 17, 22, "1");
-      // smile
       put(grid, 14, 24, "4");
       put(grid, 15, 25, "4");
       put(grid, 16, 25, "4");
       put(grid, 17, 24, "4");
-      // cheeks
       put(grid, 13, 23, "5");
       put(grid, 18, 23, "5");
     }
   }
 
   switch (kind) {
-    case 1:  return drawHouse();
+    case 1:  return drawHousePhotoSeries(); // <- updated
     case 2:  return drawFarm();
     case 3:  return drawWorkshop();
     case 4:  return drawPark();
